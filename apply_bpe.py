@@ -36,7 +36,7 @@ import codecs
 
 class BPE(object):
 
-    def __init__(self, codes, separator='@@'):            
+    def __init__(self, codes, separator='@@'):
 
         self.bpe_codes = [tuple(item.split()) for item in codes]
 
@@ -45,16 +45,19 @@ class BPE(object):
 
         self.separator = separator
 
-    def segment(self, sentence):
+    def segment(self, sentence, ignore=None):
         """segment single sentence (whitespace-tokenized string) with BPE encoding"""
 
         output = []
         for word in sentence.split():
-            new_word = encode(word, self.bpe_codes)
+            if ignore is not None and word in ignore:
+                output.append(new_word)
+            else:
+                new_word = encode(word, self.bpe_codes)
 
-            for item in new_word[:-1]:
-                output.append(item + self.separator)
-            output.append(new_word[-1])
+                for item in new_word[:-1]:
+                    output.append(item + self.separator)
+                output.append(new_word[-1])
 
         return ' '.join(output)
 
@@ -75,6 +78,9 @@ def create_parser():
         '--output', '-o', type=argparse.FileType('w'), default=sys.stdout,
         metavar='PATH',
         help="Output file (default: standard output)")
+    parser.add_argument(
+        '--ignore', default=None,
+        help="(Optional) a file containing words that should never be segmented, one per line")
     parser.add_argument(
         '--separator', '-s', type=str, default='@@', metavar='STR',
         help="Separator between non-final subword units (default: '%(default)s'))")
@@ -153,8 +159,13 @@ if __name__ == '__main__':
     if args.output.name != '<stdout>':
         args.output = codecs.open(args.output.name, 'w', encoding='utf-8')
 
+    ignore_strs = None
+    if args.ignore is not None:
+        with codecs.open(args.ignore, encoding='utf8') as ig_strs:
+            ignore_strs = set(ig_strs.read().strip().split('\n'))
+
     bpe = BPE(args.codes, args.separator)
 
     for line in args.input:
-        args.output.write(bpe.segment(line).strip())
+        args.output.write(bpe.segment(line, ignore=ignore_strs).strip())
         args.output.write('\n')
