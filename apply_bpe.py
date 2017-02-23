@@ -36,21 +36,20 @@ import codecs
 
 class BPE(object):
 
-    def __init__(self, codes, separator='@@'):
-
+    def __init__(self, codes, separator='@@', ignore=None):
         self.bpe_codes = [tuple(item.split()) for item in codes]
+        self.ignore = ignore
 
         # some hacking to deal with duplicates (only consider first instance)
         self.bpe_codes = dict([(code,i) for (i,code) in reversed(list(enumerate(self.bpe_codes)))])
-
         self.separator = separator
 
-    def segment(self, sentence, ignore=None):
+    def segment(self, sentence):
         """segment single sentence (whitespace-tokenized string) with BPE encoding"""
 
         output = []
         for word in sentence.split():
-            if ignore is not None and word in ignore:
+            if self.ignore is not None and word in self.ignore:
                 output.append(new_word)
             else:
                 new_word = encode(word, self.bpe_codes)
@@ -60,6 +59,7 @@ class BPE(object):
                 output.append(new_word[-1])
 
         return ' '.join(output)
+
 
 def create_parser():
     parser = argparse.ArgumentParser(
@@ -164,8 +164,8 @@ if __name__ == '__main__':
         with codecs.open(args.ignore, encoding='utf8') as ig_strs:
             ignore_strs = set(ig_strs.read().strip().split('\n'))
 
-    bpe = BPE(args.codes, args.separator)
+    bpe = BPE(args.codes, args.separator, ignore=ignore_strs)
 
     for line in args.input:
-        args.output.write(bpe.segment(line, ignore=ignore_strs).strip())
+        args.output.write(bpe.segment(line).strip())
         args.output.write('\n')
