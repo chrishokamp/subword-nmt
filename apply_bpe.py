@@ -50,7 +50,7 @@ class BPE(object):
         output = []
         for word in sentence.split():
             if self.ignore is not None and word in self.ignore:
-                output.append(new_word)
+                output.append(word)
             else:
                 new_word = encode(word, self.bpe_codes)
 
@@ -86,6 +86,7 @@ def create_parser():
         help="Separator between non-final subword units (default: '%(default)s'))")
 
     return parser
+
 
 def get_pairs(word):
     """Return set of symbol pairs in a word.
